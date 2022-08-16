@@ -1014,7 +1014,7 @@ void Position::do_null_move(StateInfo& newSt) {
 
   st->key ^= Zobrist::side;
   ++st->rule50;
-  prefetch(TT.first_entry(key()));
+  prefetch(TT.first_entry(key(), superkey()));
 
   st->pliesFromNull = 0;
 
@@ -1057,6 +1057,26 @@ Key Position::key_after(Move m) const {
   return k ^ Zobrist::psq[pc][to] ^ Zobrist::psq[pc][from];
 }
 
+Key Position::superkey_after(Move m) const {
+
+  Square from = from_sq(m);
+  Square to = to_sq(m);
+  Piece pc = piece_on(from);
+  Piece captured = piece_on(to);
+  Key k = pawn_key();
+
+  if (captured && type_of(pc) == PAWN)
+    return k ^ popcount(pieces()) - 1 ^ Zobrist::psq[pc][to] ^ Zobrist::psq[pc][from];
+
+  else if (captured)
+    return k ^ popcount(pieces()) - 1;
+
+  else if (type_of(pc) == PAWN)
+    return k ^ Zobrist::psq[pc][to] ^ Zobrist::psq[pc][from];
+
+  else
+    return k ^ popcount(pieces());
+}
 
 /// Position::see_ge (Static Exchange Evaluation Greater or Equal) tests if the
 /// SEE value of move is greater or equal to the given threshold. We'll use an

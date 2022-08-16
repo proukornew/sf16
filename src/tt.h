@@ -66,6 +66,10 @@ private:
 class TranspositionTable {
 
   static constexpr int ClusterSize = 3;
+  static constexpr int superCluster_s = 1024*1024;
+  static constexpr int superCluster_n = 32768;
+  //static constexpr int superCluster_b = 15;
+  static constexpr int superCluster_m = 0x7FFF;
 
   struct Cluster {
     TTEntry entry[ClusterSize];
@@ -83,19 +87,21 @@ class TranspositionTable {
 public:
  ~TranspositionTable() { aligned_large_pages_free(table); }
   void new_search() { generation8 += GENERATION_DELTA; } // Lower bits are used for other things
-  TTEntry* probe(const Key key, bool& found) const;
+  TTEntry* probe(const Key key, const Key superkey, bool& found) const;
   int hashfull() const;
   void resize(size_t mbSize);
   void clear();
 
-  TTEntry* first_entry(const Key key) const {
-    return &table[mul_hi64(key, clusterCount)].entry[0];
+  TTEntry* first_entry(const Key key, const Key superkey) const {
+    return &table[mul_hi64(superkey, superClusterCount) * superCluster_n + (key >> 16 & superCluster_m)].entry[0];
   }
 
 private:
   friend struct TTEntry;
 
   size_t clusterCount;
+  size_t superClusterCount;
+  
   Cluster* table;
   uint8_t generation8; // Size must be not bigger than TTEntry::genBound8
 };

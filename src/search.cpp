@@ -555,6 +555,7 @@ namespace {
 
     TTEntry* tte;
     Key posKey;
+    Key superKey;
     Move ttMove, move, excludedMove, bestMove;
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval, maxValue, probCutBeta;
@@ -625,7 +626,7 @@ namespace {
     // position key in case of an excluded move.
     excludedMove = ss->excludedMove;
     posKey = excludedMove == MOVE_NONE ? pos.key() : pos.key() ^ make_key(excludedMove);
-    tte = TT.probe(posKey, ss->ttHit);
+    tte = TT.probe(posKey, pos.superkey(), ss->ttHit);
     ttValue = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
     ttMove =  rootNode ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
             : ss->ttHit    ? tte->move() : MOVE_NONE;
@@ -1115,7 +1116,7 @@ moves_loop: // When in check, search starts here
       ss->doubleExtensions = (ss-1)->doubleExtensions + (extension == 2);
 
       // Speculative prefetch as early as possible
-      prefetch(TT.first_entry(pos.key_after(move)));
+      prefetch(TT.first_entry(pos.key_after(move), pos.superkey_after(move)));
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
@@ -1420,7 +1421,7 @@ moves_loop: // When in check, search starts here
                                                   : DEPTH_QS_NO_CHECKS;
     // Transposition table lookup
     posKey = pos.key();
-    tte = TT.probe(posKey, ss->ttHit);
+    tte = TT.probe(posKey, pos.superkey(), ss->ttHit);
     ttValue = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
     ttMove = ss->ttHit ? tte->move() : MOVE_NONE;
     pvHit = ss->ttHit && tte->is_pv();
@@ -1536,7 +1537,7 @@ moves_loop: // When in check, search starts here
           continue;
 
       // Speculative prefetch as early as possible
-      prefetch(TT.first_entry(pos.key_after(move)));
+      prefetch(TT.first_entry(pos.key_after(move), pos.superkey_after(move)));
 
       ss->currentMove = move;
       ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
@@ -1897,7 +1898,7 @@ bool RootMove::extract_ponder_from_tt(Position& pos) {
         return false;
 
     pos.do_move(pv[0], st);
-    TTEntry* tte = TT.probe(pos.key(), ttHit);
+    TTEntry* tte = TT.probe(pos.key(), pos.superkey(), ttHit);
 
     if (ttHit)
     {

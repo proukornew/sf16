@@ -66,9 +66,11 @@ void TranspositionTable::resize(size_t mbSize) {
 
   aligned_large_pages_free(table);
 
-  clusterCount = mbSize * 1024 * 1024 / sizeof(Cluster);
+  size_t hashsize = mbSize * 1024 * 1024;
+  superClusterCount = hashsize / superCluster_s;
+  clusterCount = superCluster_s / sizeof(Cluster);
 
-  table = static_cast<Cluster*>(aligned_large_pages_alloc(clusterCount * sizeof(Cluster)));
+  table = static_cast<Cluster*>(aligned_large_pages_alloc(superClusterCount * clusterCount * sizeof(Cluster)));
   if (!table)
   {
       std::cerr << "Failed to allocate " << mbSize
@@ -96,10 +98,10 @@ void TranspositionTable::clear() {
               WinProcGroup::bindThisThread(idx);
 
           // Each thread will zero its part of the hash table
-          const size_t stride = size_t(clusterCount / Options["Threads"]),
+          const size_t stride = size_t(superClusterCount * clusterCount / Options["Threads"]),
                        start  = size_t(stride * idx),
                        len    = idx != Options["Threads"] - 1 ?
-                                stride : clusterCount - start;
+                                stride : superClusterCount * clusterCount - start;
 
           std::memset(&table[start], 0, len * sizeof(Cluster));
       });
@@ -117,9 +119,9 @@ void TranspositionTable::clear() {
 /// minus 8 times its relative age. TTEntry t1 is considered more valuable than
 /// TTEntry t2 if its replace value is greater than that of t2.
 
-TTEntry* TranspositionTable::probe(const Key key, bool& found) const {
+TTEntry* TranspositionTable::probe(const Key key, const Key superkey, bool& found) const {
 
-  TTEntry* const tte = first_entry(key);
+  TTEntry* const tte = first_entry(key, superkey);
   const uint16_t key16 = (uint16_t)key;  // Use the low 16 bits as key inside the cluster
 
   for (int i = 0; i < ClusterSize; ++i)
