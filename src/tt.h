@@ -66,10 +66,10 @@ private:
 class TranspositionTable {
 
   static constexpr int ClusterSize = 3;
-  static constexpr int superCluster_s = 4*1024*1024;
-  static constexpr int superCluster_n = 4*32768;
+  static constexpr int superCluster_s = 1024*1024/2;
+  static constexpr int superCluster_n = 32768/2;
   //static constexpr int superCluster_b = 15;
-  static constexpr int superCluster_m = 0x1FFFF;
+  static constexpr int superCluster_m = 0x3FFF;
 
   struct Cluster {
     TTEntry entry[ClusterSize];
