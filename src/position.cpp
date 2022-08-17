@@ -1040,21 +1040,51 @@ void Position::undo_null_move() {
 
 
 /// Position::key_after() computes the new hash key after the given move. Needed
-/// for speculative prefetch. It doesn't recognize special moves like castling,
+/// for speculative prefetch. It [s]doesn't[/s] recognize special moves like castling,
 /// en passant and promotions.
 
 Key Position::key_after(Move m) const {
-
+//TODO: Standard chess only
   Square from = from_sq(m);
   Square to = to_sq(m);
   Piece pc = piece_on(from);
   Piece captured = piece_on(to);
   Key k = st->key ^ Zobrist::side;
+  MoveType mt = type_of(m);
 
-  if (captured)
+  if (mt == NORMAL) {
+    if (captured)
       k ^= Zobrist::psq[captured][to];
-
-  return k ^ Zobrist::psq[pc][to] ^ Zobrist::psq[pc][from];
+    return k ^ Zobrist::psq[pc][to] ^ Zobrist::psq[pc][from];
+  }
+  else if (mt == CASTLING) {
+    if (sideToMove == WHITE) {
+      if (file_of(to) == FILE_C)
+        k ^= Zobrist::psq[W_ROOK][SQ_A1] ^ Zobrist::psq[W_ROOK][SQ_D1];
+      else if (file_of(to) == FILE_G)
+        k ^= Zobrist::psq[W_ROOK][SQ_H1] ^ Zobrist::psq[W_ROOK][SQ_F1];
+    }
+    else if (sideToMove == BLACK) {
+      if (file_of(to) == FILE_C)
+        k ^= Zobrist::psq[B_ROOK][SQ_A8] ^ Zobrist::psq[W_ROOK][SQ_D8];
+      else if (file_of(to) == FILE_G)
+        k ^= Zobrist::psq[B_ROOK][SQ_H8] ^ Zobrist::psq[W_ROOK][SQ_F8];
+    }
+    return k ^ Zobrist::psq[pc][to] ^ Zobrist::psq[pc][from];
+  }
+  else if (mt == EN_PASSANT) {
+    if (sideToMove == WHITE)
+      k ^= Zobrist::psq[B_PAWN][to+SOUTH];
+    else if (sideToMove == BLACK)
+      k ^= Zobrist::psq[W_PAWN][to+NORTH];
+    return k ^ Zobrist::psq[pc][to] ^ Zobrist::psq[pc][from];
+  }
+  else if (mt == PROMOTION) {
+    PieceType pt = promotion_type(m);
+    if (captured)
+      k ^= Zobrist::psq[captured][to];
+    return k ^ Zobrist::psq[make_piece(sideToMove, pt)][to] ^ Zobrist::psq[pc][from];
+  }
 }
 
 
