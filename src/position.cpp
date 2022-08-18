@@ -1044,47 +1044,42 @@ void Position::undo_null_move() {
 /// en passant and promotions.
 
 Key Position::key_after(Move m) const {
-//TODO: Standard chess only
+
   Square from = from_sq(m);
   Square to = to_sq(m);
   Piece pc = piece_on(from);
   Piece captured = piece_on(to);
   Key k = st->key ^ Zobrist::side;
   MoveType mt = type_of(m);
-
   if (mt == NORMAL) {
     if (captured)
       k ^= Zobrist::psq[captured][to];
-    return k ^ Zobrist::psq[pc][to] ^ Zobrist::psq[pc][from];
   }
   else if (mt == CASTLING) {
-    if (sideToMove == WHITE) {
-      if (file_of(to) == FILE_C)
-        k ^= Zobrist::psq[W_ROOK][SQ_A1] ^ Zobrist::psq[W_ROOK][SQ_D1];
-      else if (file_of(to) == FILE_G)
-        k ^= Zobrist::psq[W_ROOK][SQ_H1] ^ Zobrist::psq[W_ROOK][SQ_F1];
-    }
-    else if (sideToMove == BLACK) {
-      if (file_of(to) == FILE_C)
-        k ^= Zobrist::psq[B_ROOK][SQ_A8] ^ Zobrist::psq[W_ROOK][SQ_D8];
-      else if (file_of(to) == FILE_G)
-        k ^= Zobrist::psq[B_ROOK][SQ_H8] ^ Zobrist::psq[W_ROOK][SQ_F8];
-    }
-    return k ^ Zobrist::psq[pc][to] ^ Zobrist::psq[pc][from];
+    bool kingSide = to > from;
+
+    k ^= Zobrist::castling[st->castlingRights];
+    k ^= Zobrist::castling[st->castlingRights & ~(castlingRightsMask[from] | castlingRightsMask[to])];
+
+    Square rfrom = to; // Castling is encoded as "king captures friendly rook"
+    Square rto = relative_square(sideToMove, kingSide ? SQ_F1 : SQ_D1);
+    to = relative_square(sideToMove, kingSide ? SQ_G1 : SQ_C1);
+
+    Piece rook = make_piece(sideToMove, ROOK);
+    pc = make_piece(sideToMove, KING);
+    k ^= Zobrist::psq[rook][rto] ^ Zobrist::psq[rook][rfrom];
   }
   else if (mt == EN_PASSANT) {
-    if (sideToMove == WHITE)
-      k ^= Zobrist::psq[B_PAWN][to+SOUTH];
-    else if (sideToMove == BLACK)
-      k ^= Zobrist::psq[W_PAWN][to+NORTH];
-    return k ^ Zobrist::psq[pc][to] ^ Zobrist::psq[pc][from];
+    k ^= Zobrist::psq[make_piece(~sideToMove, PAWN)][to - pawn_push(sideToMove)];
+    k ^= Zobrist::enpassant[file_of(to)];
   }
   else if (mt == PROMOTION) {
     PieceType pt = promotion_type(m);
     if (captured)
       k ^= Zobrist::psq[captured][to];
-    return k ^ Zobrist::psq[make_piece(sideToMove, pt)][to] ^ Zobrist::psq[pc][from];
+    pc = make_piece(sideToMove, pt);
   }
+  return k ^ Zobrist::psq[pc][to] ^ Zobrist::psq[pc][from];
 }
 
 
