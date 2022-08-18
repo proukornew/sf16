@@ -175,7 +175,6 @@ public:
   void put_piece(Piece pc, Square s);
   void remove_piece(Square s);
 
-private:
   // Initialization helpers (used while setting up a position)
   void set_castling_right(Color c, Square rfrom);
   void set_state(StateInfo* si) const;

@@ -36,6 +36,54 @@
 #include "syzygy/tbprobe.h"
 
 namespace Stockfish {
+/// Position::key_after() computes the new hash key after the given move. Needed
+/// for speculative prefetch. It [s]doesn't[/s] recognize special moves like castling,
+/// en passant and promotions.
+namespace Zobrist {
+extern Key psq[PIECE_NB][SQUARE_NB];
+extern Key castling[CASTLING_RIGHT_NB];
+extern Key side;
+extern Key enpassant[FILE_NB];
+}
+
+inline Key key_after(Position& pos, Move m) {
+
+  Square from = from_sq(m);
+  Square to = to_sq(m);
+  Piece pc = pos.piece_on(from);
+  Piece captured = pos.piece_on(to);
+  Key k = pos.state()->key ^ Zobrist::side;
+  MoveType mt = type_of(m);
+  if (mt == NORMAL) {
+    if (captured)
+      k ^= Zobrist::psq[captured][to];
+  }
+  else if (mt == CASTLING) {
+    bool kingSide = to > from;
+
+    k ^= Zobrist::castling[pos.state()->castlingRights];
+    k ^= Zobrist::castling[pos.state()->castlingRights & ~(pos.castlingRightsMask[from] | pos.castlingRightsMask[to])];
+
+    Square rfrom = to; // Castling is encoded as "king captures friendly rook"
+    Square rto = relative_square(pos.sideToMove, kingSide ? SQ_F1 : SQ_D1);
+    to = relative_square(pos.sideToMove, kingSide ? SQ_G1 : SQ_C1);
+
+    Piece rook = make_piece(pos.sideToMove, ROOK);
+    pc = make_piece(pos.sideToMove, KING);
+    k ^= Zobrist::psq[rook][rto] ^ Zobrist::psq[rook][rfrom];
+  }
+  else if (mt == EN_PASSANT) {
+    k ^= Zobrist::psq[make_piece(~pos.sideToMove, PAWN)][to - pawn_push(pos.sideToMove)];
+    k ^= Zobrist::enpassant[file_of(to)];
+  }
+  else if (mt == PROMOTION) {
+    PieceType pt = promotion_type(m);
+    if (captured)
+      k ^= Zobrist::psq[captured][to];
+    pc = make_piece(pos.sideToMove, pt);
+  }
+  return k ^ Zobrist::psq[pc][to] ^ Zobrist::psq[pc][from];
+}
 
 namespace Search {
 
@@ -1115,7 +1163,7 @@ moves_loop: // When in check, search starts here
       ss->doubleExtensions = (ss-1)->doubleExtensions + (extension == 2);
 
       // Speculative prefetch as early as possible
-      prefetch(TT.first_entry(pos.key_after(move)));
+      prefetch(TT.first_entry(key_after(pos, move)));
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
@@ -1536,7 +1584,7 @@ moves_loop: // When in check, search starts here
           continue;
 
       // Speculative prefetch as early as possible
-      prefetch(TT.first_entry(pos.key_after(move)));
+      prefetch(TT.first_entry(key_after(pos, move)));
 
       ss->currentMove = move;
       ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
