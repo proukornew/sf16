@@ -27,7 +27,27 @@
 
 namespace Stockfish {
 
+namespace Zobrist {
+
+  extern Key psq[PIECE_NB][SQUARE_NB];
+  extern Key enpassant[FILE_NB];
+  extern Key castling[CASTLING_RIGHT_NB];
+  extern Key side, noPawns;
+}
+
 class Position;
+
+inline Key key_after(Position& pos, Move m) {
+
+  Square from = from_sq(m);
+  Square to = to_sq(m);
+  Piece pc = pos.piece_on(from);
+  Piece captured = pos.piece_on(to);
+  Key k = pos.state()->key ^ Zobrist::side;
+  if (captured)
+    k ^= Zobrist::psq[captured][to];
+  return k ^ Zobrist::psq[pc][to] ^ Zobrist::psq[pc][from];
+}
 
 namespace Search {
 
