@@ -1163,7 +1163,7 @@ moves_loop: // When in check, search starts here
       ss->doubleExtensions = (ss-1)->doubleExtensions + (extension == 2);
 
       // Speculative prefetch as early as possible
-      prefetch(TT.first_entry(key_after(pos, move)));
+      //prefetch(TT.first_entry(key_after(pos, move)));
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
@@ -1584,7 +1584,7 @@ moves_loop: // When in check, search starts here
           continue;
 
       // Speculative prefetch as early as possible
-      prefetch(TT.first_entry(key_after(pos, move)));
+      //prefetch(TT.first_entry(pos.key_after(move)));
 
       ss->currentMove = move;
       ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
