@@ -56,7 +56,7 @@ inline Key key_after(Position& pos, Move m) {
   //MoveType mt = type_of(m);
   //if (mt == NORMAL) {
     //if (captured)
-      k ^= Zobrist::psq[captured][to];
+      //k ^= Zobrist::psq[captured][to];
   //}
   // else if (mt == CASTLING) {
     // bool kingSide = to > from;
