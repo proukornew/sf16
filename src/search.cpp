@@ -53,35 +53,35 @@ inline Key key_after(Position& pos, Move m) {
   Piece pc = pos.piece_on(from);
   Piece captured = pos.piece_on(to);
   Key k = pos.state()->key ^ Zobrist::side;
-  MoveType mt = type_of(m);
-  if (mt == NORMAL) {
+  //MoveType mt = type_of(m);
+  //if (mt == NORMAL) {
     if (captured)
       k ^= Zobrist::psq[captured][to];
-  }
-  else if (mt == CASTLING) {
-    bool kingSide = to > from;
+  //}
+  // else if (mt == CASTLING) {
+    // bool kingSide = to > from;
 
-    k ^= Zobrist::castling[pos.state()->castlingRights];
-    k ^= Zobrist::castling[pos.state()->castlingRights & ~(pos.castlingRightsMask[from] | pos.castlingRightsMask[to])];
+    // k ^= Zobrist::castling[pos.state()->castlingRights];
+    // k ^= Zobrist::castling[pos.state()->castlingRights & ~(pos.castlingRightsMask[from] | pos.castlingRightsMask[to])];
 
-    Square rfrom = to; // Castling is encoded as "king captures friendly rook"
-    Square rto = relative_square(pos.sideToMove, kingSide ? SQ_F1 : SQ_D1);
-    to = relative_square(pos.sideToMove, kingSide ? SQ_G1 : SQ_C1);
+    // Square rfrom = to; // Castling is encoded as "king captures friendly rook"
+    // Square rto = relative_square(pos.sideToMove, kingSide ? SQ_F1 : SQ_D1);
+    // to = relative_square(pos.sideToMove, kingSide ? SQ_G1 : SQ_C1);
 
-    Piece rook = make_piece(pos.sideToMove, ROOK);
-    pc = make_piece(pos.sideToMove, KING);
-    k ^= Zobrist::psq[rook][rto] ^ Zobrist::psq[rook][rfrom];
-  }
-  else if (mt == EN_PASSANT) {
-    k ^= Zobrist::psq[make_piece(~pos.sideToMove, PAWN)][to - pawn_push(pos.sideToMove)];
-    k ^= Zobrist::enpassant[file_of(to)];
-  }
-  else if (mt == PROMOTION) {
-    PieceType pt = promotion_type(m);
-    if (captured)
-      k ^= Zobrist::psq[captured][to];
-    pc = make_piece(pos.sideToMove, pt);
-  }
+    // Piece rook = make_piece(pos.sideToMove, ROOK);
+    // pc = make_piece(pos.sideToMove, KING);
+    // k ^= Zobrist::psq[rook][rto] ^ Zobrist::psq[rook][rfrom];
+  // }
+  // else if (mt == EN_PASSANT) {
+    // k ^= Zobrist::psq[make_piece(~pos.sideToMove, PAWN)][to - pawn_push(pos.sideToMove)];
+    // k ^= Zobrist::enpassant[file_of(to)];
+  // }
+  // else if (mt == PROMOTION) {
+    // PieceType pt = promotion_type(m);
+    // if (captured)
+      // k ^= Zobrist::psq[captured][to];
+    // pc = make_piece(pos.sideToMove, pt);
+  // }
   return k ^ Zobrist::psq[pc][to] ^ Zobrist::psq[pc][from];
 }
 
