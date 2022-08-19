@@ -51,11 +51,11 @@ inline Key key_after(Position& pos, Move m) {
   Square from = from_sq(m);
   Square to = to_sq(m);
   Piece pc = pos.piece_on(from);
-  Piece captured = pos.piece_on(to);
+  //Piece captured = pos.piece_on(to);
   Key k = pos.state()->key ^ Zobrist::side;
   //MoveType mt = type_of(m);
   //if (mt == NORMAL) {
-    if (captured)
+    //if (captured)
       k ^= Zobrist::psq[captured][to];
   //}
   // else if (mt == CASTLING) {
