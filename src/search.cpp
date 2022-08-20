@@ -1114,9 +1114,6 @@ moves_loop: // When in check, search starts here
       newDepth += extension;
       ss->doubleExtensions = (ss-1)->doubleExtensions + (extension == 2);
 
-      // Speculative prefetch as early as possible
-      prefetch(TT.first_entry(pos.key_after(move)));
-
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
       ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
@@ -1126,6 +1123,9 @@ moves_loop: // When in check, search starts here
 
       // Step 16. Make the move
       pos.do_move(move, st, givesCheck);
+
+      // Speculative prefetch as early as possible
+      prefetch(TT.first_entry(pos.key()));
 
       // Step 17. Late moves reduction / extension (LMR, ~98 Elo)
       // We use various heuristics for the sons of a node after the first son has
