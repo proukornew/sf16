@@ -39,7 +39,7 @@ class Position;
 
 inline Key key_after(Position& pos, Move m) {
 
-  if(pos.state()->rule50 < 13 && type_of(m) == NORMAL) {
+  if(type_of(m) == NORMAL) {
     Square from = from_sq(m);
     Square to = to_sq(m);
     Piece pc = pos.piece_on(from);
