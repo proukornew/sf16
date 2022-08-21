@@ -39,14 +39,18 @@ class Position;
 
 inline Key key_after(Position& pos, Move m) {
 
-  Square from = from_sq(m);
-  Square to = to_sq(m);
-  Piece pc = pos.piece_on(from);
-  Piece captured = pos.piece_on(to);
-  Key k = pos.state()->key ^ Zobrist::side;
-  if (captured)
-    k ^= Zobrist::psq[captured][to];
-  return k ^ Zobrist::psq[pc][to] ^ Zobrist::psq[pc][from];
+  if(pos.state()->rule50 < 13 && type_of(m) == NORMAL) {
+    Square from = from_sq(m);
+    Square to = to_sq(m);
+    Piece pc = pos.piece_on(from);
+    Piece captured = pos.piece_on(to);
+    Key k = pos.state()->key ^ Zobrist::side;
+    if (captured)
+      k ^= Zobrist::psq[captured][to];
+    return k ^ Zobrist::psq[pc][to] ^ Zobrist::psq[pc][from];
+  }
+  else
+    return 0;
 }
 
 namespace Search {
